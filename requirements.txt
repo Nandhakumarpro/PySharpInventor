@@ -1,0 +1,2 @@
+# Core dependencies
+pythonnet>=3.0.0
