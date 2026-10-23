@@ -10,28 +10,22 @@
     :license: BSD, see LICENSE.txt for more details.
 """
 
-import os
-import glob
 import logging
 
-__all__ = ['Inventor', 'InventorInterop', 'INVENTOR']
+from pysharpinventor._interop import (
+    InventorInterop,
+    InventorConnectionError,
+    InventorVersionNotFoundError,
+    load_interop,
+)
 
-class InventorInterop:
-    pass
+__all__ = ['Inventor', 'InventorInterop', 'INVENTOR',
+           'InventorConnectionError', 'InventorVersionNotFoundError']
+
 class INVENTOR:
     pass
 
 logger = logging.getLogger(__name__)
-
-
-class InventorConnectionError(Exception):
-    """Raised when unable to connect to Inventor"""
-    pass
-
-
-class InventorVersionNotFoundError(Exception):
-    """Raised when Inventor installation is not found"""
-    pass
 
 
 class Inventor(object):
@@ -48,70 +42,7 @@ class Inventor(object):
         self._visible = visible
         self._app = None
         self._inventor_path = inventor_path
-        self._clr_loaded = False
-        self._load_clr_modules()  # Load CLR modules immediately
-
-    def _load_clr_modules(self):
-        """Load CLR modules and Inventor interop assembly"""
-        if self._clr_loaded:
-            return
-
-        try:
-            import clr
-            import System
-        except ImportError:
-            raise InventorConnectionError(
-                "pythonnet is required. Install with: pip install pythonnet"
-            )
-
-        # Find Inventor Interop DLL
-        if self._inventor_path:
-            dll_path = self._inventor_path
-        else:
-            dll_path = self._find_inventor_dll()
-
-        if not dll_path or not os.path.exists(dll_path):
-            raise InventorVersionNotFoundError(
-                "Inventor Interop DLL not found. Please provide inventor_path parameter."
-            )
-
-        try:
-            clr.AddReference(dll_path)
-            clr.AddReference("System")
-            global InventorInterop
-            import Inventor as InventorInterop
-            self._clr_loaded = True
-            logger.info(f"Loaded Inventor Interop from: {dll_path}")
-        except Exception as e:
-            raise InventorConnectionError(f"Failed to load Inventor Interop DLL: {e}")
-
-    def _find_inventor_dll(self):
-        """Dynamically find Inventor Interop DLL for various versions"""
-        # Common installation paths for different Inventor versions
-        base_paths = [
-            r"C:\Program Files\Autodesk",
-            r"C:\Program Files (x86)\Autodesk"
-        ]
-
-        # Search for Inventor installations (versions 2020-2025+)
-        for base_path in base_paths:
-            if not os.path.exists(base_path):
-                continue
-
-            # Search for Inventor directories
-            inventor_dirs = glob.glob(os.path.join(base_path, "Inventor *"))
-            for inventor_dir in inventor_dirs:
-                dll_pattern = os.path.join(
-                    inventor_dir,
-                    "Bin",
-                    "Public Assemblies",
-                    "Autodesk.Inventor.Interop.dll"
-                )
-                if os.path.exists(dll_pattern):
-                    logger.info(f"Found Inventor at: {dll_pattern}")
-                    return dll_pattern
-
-        return None
+        load_interop(inventor_path)  # Load CLR modules immediately
 
     @property
     def app(self):
@@ -119,7 +50,6 @@ class Inventor(object):
         if self._app is None:
             try:
                 import System
-                global InventorInterop
 
                 # Try to get active Inventor instance
                 try:

@@ -1,15 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+import os
+
+from setuptools import setup, find_packages
+
+here = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(here, "README.rst"), encoding="utf-8") as f:
+    long_description = f.read()
 
 setup(
     name="pysharpinventor",
-    packages=["pysharpinventor", "pysharpinventor.contrib"],
+    packages=find_packages(include=["pysharpinventor", "pysharpinventor.*"]),
     version="0.1.0",
     description="Autodesk Inventor Automation for Python",
+    long_description=long_description,
+    long_description_content_type="text/x-rst",
     author="Nandhakumar",
     author_email="nandhakumar_maint@hotmail.com",
     url="https://github.com/Nandhakumarpro/pysharpinventor",
