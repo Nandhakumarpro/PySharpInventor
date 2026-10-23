@@ -22,10 +22,10 @@ setup(
         'pythonnet>=3.0.0',
     ],
     keywords=["inventor", "automation", "clr", "autodesk"],
-    license="BSD License",
+    license="BSD-3-Clause",
+    license_files=["LICENSE.txt"],
     classifiers=[
         "Programming Language :: Python",
-        "License :: OSI Approved :: BSD License",
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Programming Language :: Python :: 3",
