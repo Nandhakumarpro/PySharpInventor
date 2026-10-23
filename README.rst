@@ -220,5 +220,4 @@ face's type, area and outward normal. Run it from the repository root:
 Links
 -----
 
-- **Documentation** at `readthedocs.org <https://pysharpinventor.readthedocs.io/>`_
 - **Source code** at `GitHub <https://github.com/Nandhakumarpro/PySharpInventor>`_
