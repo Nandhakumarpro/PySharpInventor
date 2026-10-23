@@ -15,7 +15,7 @@
 
 import logging
 
-from pysharpinventor._interop import InventorInterop
+from pysharpinventor._interop import InventorInterop, register_extension
 
 __all__ = ['get_edge_curve_type', 'cast_edge_geometry',
            'get_face_surface_type', 'cast_face_geometry']
@@ -143,3 +143,14 @@ def cast_face_geometry(face):
     surface_type = face.SurfaceType
     classes = _get_type_classes('SurfaceTypeEnum', _SURFACE_TYPE_CLASS_NAMES)
     return surface_type, _cast_geometry(face, surface_type, classes)
+
+
+# Extension methods: edge.cast_edge_geometry(), face.cast_face_geometry(), ...
+# Assembly proxies (EdgeProxy, FaceProxy) are separate types, so they are registered too.
+for _class_name in ('Edge', 'EdgeProxy'):
+    register_extension(_class_name, 'get_edge_curve_type', get_edge_curve_type)
+    register_extension(_class_name, 'cast_edge_geometry', cast_edge_geometry)
+
+for _class_name in ('Face', 'FaceProxy'):
+    register_extension(_class_name, 'get_face_surface_type', get_face_surface_type)
+    register_extension(_class_name, 'cast_face_geometry', cast_face_geometry)

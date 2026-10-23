@@ -30,6 +30,30 @@ class InventorVersionNotFoundError(Exception):
 _module = None
 _dll_path = None
 
+# (class name, method name, function) attached to Interop classes once loaded
+_extensions = []
+
+
+def register_extension(class_name, method_name, func):
+    """
+    Attach a Python function as a method of an Inventor Interop class,
+    similar to a C# extension method::
+
+        register_extension('Edge', 'cast_edge_geometry', cast_edge_geometry)
+        edge.cast_edge_geometry()
+
+    Only objects already typed as that class get the method; a bare
+    ``System.__ComObject`` must be cast first, e.g. ``InventorInterop.Edge(obj)``.
+    """
+    _extensions.append((class_name, method_name, func))
+    if _module is not None:
+        setattr(getattr(_module, class_name), method_name, func)
+
+
+def _apply_extensions():
+    for class_name, method_name, func in _extensions:
+        setattr(getattr(_module, class_name), method_name, func)
+
 
 def find_inventor_dll():
     """Find the Inventor Interop DLL, preferring the newest installed version"""
@@ -96,6 +120,7 @@ def load_interop(dll_path=None):
 
     _module = Inventor
     _dll_path = dll_path
+    _apply_extensions()
     logger.info(f"Loaded Inventor Interop from: {dll_path}")
     return _module
 

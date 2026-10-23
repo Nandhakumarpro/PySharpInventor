@@ -13,3 +13,4 @@ __docformat__ = 'restructuredtext en'
 __version__ = '0.1.0'
 
 from pysharpinventor.api import *
+from pysharpinventor import geometry  # registers Edge/Face extension methods
