@@ -17,7 +17,7 @@ setup(
     long_description_content_type="text/x-rst",
     author="Nandhakumar",
     author_email="nandhakumar_maint@hotmail.com",
-    url="https://github.com/Nandhakumarpro/pysharpinventor",
+    url="https://github.com/Nandhakumarpro/PySharpInventor",
     install_requires=[
         'pythonnet>=3.0.0',
     ],

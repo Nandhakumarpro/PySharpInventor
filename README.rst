@@ -3,9 +3,15 @@ PySharpInventor - Autodesk Inventor Automation for Python
 
 This library aims to simplify writing .NET/CLR Automation scripts for Autodesk Inventor with Python.
 
+It talks to Inventor through the official .NET Interop assembly
+(``Autodesk.Inventor.Interop.dll``) using `pythonnet <https://pythonnet.github.io/>`_,
+so you get the full, typed Inventor API from Python.
+
 Requires:
 ---------
 
+- Windows
+- Python 3
 - pythonnet>=3.0.0
 - Autodesk Inventor (2020+)
 
@@ -13,9 +19,12 @@ Features:
 ---------
 
 - Dynamic Inventor version detection (picks the newest installed version)
+- Lazy loading of the Interop assembly, so modules can be imported in any order
 - Efficient objects iteration and searching
 - .NET/CLR interface to Inventor API
 - Document type casting (Part, Assembly, Drawing, Presentation)
+- Geometry casting for edges and faces (``LineSegment``, ``Circle``, ``Plane``, ``Cylinder``, ...)
+- Extension methods on Inventor objects, e.g. ``edge.cast_edge_geometry()``
 - Custom error handling with specific exceptions
 - Support for connecting to active Inventor instances or creating new ones
 
@@ -26,6 +35,14 @@ Installation:
 
     pip install pysharpinventor
 
+For development, install from a clone in editable mode:
+
+.. code-block:: bash
+
+    git clone https://github.com/Nandhakumarpro/PySharpInventor.git
+    cd pysharpinventor
+    pip install -e .
+
 Usage Example:
 --------------
 
@@ -35,24 +52,173 @@ Usage Example:
 
     # Connect to active Inventor instance
     inv = Inventor()
-    
+
     # Or create new instance if Inventor is not running
     inv = Inventor(create_if_not_exists=True)
 
     # Or point at a specific Inventor Interop DLL
     inv = Inventor(inventor_path=r"C:\Program Files\Autodesk\Inventor 2025\Bin\Public Assemblies\Autodesk.Inventor.Interop.dll")
-    
+
     # Access active document
     doc = inv.doc
-    
+
     # Cast document to specific type
     part_doc = inv.cast_document(doc, InventorInterop.PartDocument)
-    
+
     # Or auto-detect document type
     casted_doc = inv.cast_document(doc)
+
+The ``Inventor`` object
+-----------------------
+
+``Inventor(create_if_not_exists=False, visible=True, inventor_path=None)``
+
+- ``create_if_not_exists`` - start a new Inventor if none is running.
+- ``visible`` - whether a newly started Inventor window is visible.
+- ``inventor_path`` - path to ``Autodesk.Inventor.Interop.dll``. When omitted, the
+  newest installation under ``C:\Program Files\Autodesk\Inventor *`` is used.
+
+Properties and methods:
+
+- ``inv.app`` (alias ``inv.Application``) - the ``Inventor.Application``. Connects on first use.
+- ``inv.doc`` (alias ``inv.ActiveDocument``) - the active document.
+- ``inv.cast_document(document, target_type=None)`` - cast a document to
+  ``PartDocument``, ``AssemblyDocument``, ``DrawingDocument`` or
+  ``PresentationDocument``. Without ``target_type`` the type is detected from
+  ``document.DocumentType``.
+
+``InventorInterop``
+-------------------
+
+``InventorInterop`` is the Inventor .NET namespace (``Inventor.*`` in C#). Use it for
+classes and enums:
+
+.. code-block:: python
+
+    from pysharpinventor import InventorInterop
+
+    InventorInterop.PartDocument
+    InventorInterop.SurfaceTypeEnum.kPlaneSurface
+
+It is safe to import anywhere, at any time. The Interop assembly is loaded the first
+time an attribute is accessed. If you need a custom DLL path, create
+``Inventor(inventor_path=...)`` before touching ``InventorInterop``; once loaded, the
+assembly cannot be swapped for another version in the same process.
+
+Geometry casting
+----------------
+
+``Edge.Geometry`` and ``Face.Geometry`` are returned by the API as a bare
+``System.__ComObject``. The helpers in ``pysharpinventor.geometry`` read the
+geometry type and cast it to the matching Inventor class:
+
+.. code-block:: python
+
+    from pysharpinventor.geometry import cast_edge_geometry, cast_face_geometry
+
+    body = part_doc.ComponentDefinition.SurfaceBodies[1]
+
+    curve_type, curve = cast_edge_geometry(body.Edges[1])
+    if curve_type == InventorInterop.CurveTypeEnum.kCircleCurve:
+        print(curve.Radius)
+
+    surface_type, surface = cast_face_geometry(body.Faces[1])
+    if surface_type == InventorInterop.SurfaceTypeEnum.kCylinderSurface:
+        print(surface.Radius, surface.AxisVector.X, surface.AxisVector.Y, surface.AxisVector.Z)
+
+==============================  ======================
+Edge curve type                 Geometry class
+==============================  ======================
+``kLineCurve``                  ``Line``
+``kLineSegmentCurve``           ``LineSegment``
+``kCircleCurve``                ``Circle``
+``kCircularArcCurve``           ``Arc3d``
+``kEllipseFullCurve``           ``EllipseFull``
+``kEllipticalArcCurve``         ``EllipticalArc``
+``kBSplineCurve``               ``BSplineCurve``
+``kPolylineCurve``              ``Polyline3d``
+==============================  ======================
+
+==============================  ======================
+Face surface type               Geometry class
+==============================  ======================
+``kPlaneSurface``               ``Plane``
+``kCylinderSurface``            ``Cylinder``
+``kEllipticalCylinderSurface``  ``EllipticalCylinder``
+``kConeSurface``                ``Cone``
+``kEllipticalConeSurface``      ``EllipticalCone``
+``kTorusSurface``               ``Torus``
+``kSphereSurface``              ``Sphere``
+``kBSplineSurface``             ``BSplineSurface``
+==============================  ======================
+
+For unknown types (``kUnknownCurve`` / ``kUnknownSurface``) Inventor usually cannot
+provide the geometry; the helpers then return ``None`` as the geometry. Use
+``edge.Evaluator`` / ``face.Evaluator`` for such entities.
+
+``get_edge_curve_type(edge)`` and ``get_face_surface_type(face)`` return only the type.
+
+Extension methods
+-----------------
+
+After ``import pysharpinventor``, the geometry helpers are also available as methods on
+``Edge``, ``EdgeProxy``, ``Face`` and ``FaceProxy`` objects, similar to C# extension
+methods:
+
+.. code-block:: python
+
+    curve_type, curve = body.Edges[1].cast_edge_geometry()
+    surface_type, surface = body.Faces[1].cast_face_geometry()
+
+You can attach your own functions the same way:
+
+.. code-block:: python
+
+    from pysharpinventor._interop import register_extension
+
+    def area(face):
+        return InventorInterop.Face(face).Evaluator.Area
+
+    register_extension('Face', 'area', area)
+    body.Faces[1].area()
+
+Things to know
+--------------
+
+- **Units.** The Inventor API works in internal units: centimetres for length and
+  radians for angles, regardless of the document's display units.
+- **Indexing is 1-based.** ``body.Faces[1]`` is the first face.
+- **Iterating collections returns untyped objects.** ``for e in body.Edges`` yields
+  ``System.__ComObject`` values, which do not have the typed properties or extension
+  methods. Cast them first: ``InventorInterop.Edge(e)``. Indexing (``body.Edges[1]``)
+  returns typed objects.
+- **Plane normals may point into the solid.** ``Plane.Normal`` is not guaranteed to be
+  the outward direction of a face. Flip it when ``face.IsParamReversed`` is ``True``.
+- **.NET API names differ from VBA in places.** For example, use
+  ``ExtrudeFeatures.Add(definition)`` rather than ``AddByDefinition``.
+
+Errors
+------
+
+- ``InventorVersionNotFoundError`` - the Interop DLL could not be found. Pass
+  ``inventor_path``.
+- ``InventorConnectionError`` - pythonnet is missing, the DLL failed to load, or
+  Inventor is not running (and ``create_if_not_exists`` is ``False``).
+
+Both can be imported from ``pysharpinventor``.
+
+Examples
+--------
+
+``examples/hello_world.py`` creates a new part containing a 5 cm cube and prints each
+face's type, area and outward normal. Run it from the repository root:
+
+.. code-block:: bash
+
+    python -m examples.hello_world
 
 Links
 -----
 
 - **Documentation** at `readthedocs.org <https://pysharpinventor.readthedocs.io/>`_
-- **Source code** at `GitHub <https://github.com/Nandhakumarpro/pysharpinventor>`_
+- **Source code** at `GitHub <https://github.com/Nandhakumarpro/PySharpInventor>`_
