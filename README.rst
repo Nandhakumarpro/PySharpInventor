@@ -210,12 +210,31 @@ Both can be imported from ``pysharpinventor``.
 Examples
 --------
 
+Run the examples from the repository root.
+
 ``examples/hello_world.py`` creates a new part containing a 5 cm cube and prints each
-face's type, area and outward normal. Run it from the repository root:
+face's type, area and outward normal:
 
 .. code-block:: bash
 
     python -m examples.hello_world
+
+``examples/geneva_mechanism.py`` creates a 4-slot external Geneva drive as a multi-body
+part: a drive wheel with pin and locking disc, and a slotted Geneva wheel, placed in the
+locked position. All dimensions are derived from the slot count, centre distance and pin
+size, and can be changed through ``GenevaDesign``:
+
+.. code-block:: bash
+
+    python -m examples.geneva_mechanism
+
+.. code-block:: python
+
+    from pysharpinventor import Inventor
+    from examples.geneva_mechanism import GenevaDesign, create_geneva_mechanism
+
+    design = GenevaDesign(slots=6, center_distance=12.0, pin_radius=0.4)
+    part_doc, drive, geneva = create_geneva_mechanism(Inventor(), design)
 
 Links
 -----
