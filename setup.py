@@ -21,7 +21,8 @@ setup(
     install_requires=[
         'pythonnet>=3.0.0',
     ],
-    keywords=["inventor", "automation", "clr", "autodesk"],
+    keywords=["inventor", "autodesk-inventor", "inventor-api", "autodesk", "cad",
+              "cad-automation", "automation", "pythonnet", "clr", "interop"],
     license="BSD-3-Clause",
     license_files=["LICENSE.txt"],
     classifiers=[

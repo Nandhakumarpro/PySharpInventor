@@ -19,11 +19,8 @@ from pysharpinventor._interop import (
     load_interop,
 )
 
-__all__ = ['Inventor', 'InventorInterop', 'INVENTOR',
+__all__ = ['Inventor', 'InventorInterop',
            'InventorConnectionError', 'InventorVersionNotFoundError']
-
-class INVENTOR:
-    pass
 
 logger = logging.getLogger(__name__)
 
