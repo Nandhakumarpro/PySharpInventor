@@ -14,3 +14,4 @@ __version__ = '0.2.0'
 
 from pysharpinventor.api import *
 from pysharpinventor import geometry  # registers Edge/Face extension methods
+from pysharpinventor import selectors  # registers select_faces/select_edges/select_vertices
